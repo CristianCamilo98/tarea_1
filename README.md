@@ -159,7 +159,7 @@ clean_df = cleaner.validate_price_data(df)
 clean_df = cleaner.calculate_returns(df, method='log')
 
 # Full pipeline
-clean_df = cleaner.clean_data(df, remove_duplicates=True, 
+clean_df = cleaner.clean_data(df, remove_duplicates=True,
                                handle_missing='ffill',
                                validate_prices=True,
                                calculate_returns=True)

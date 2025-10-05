@@ -14,7 +14,7 @@ import pandas as pd
 class PriceData:
     """
     Standardized price data structure for financial instruments.
-    
+
     Attributes:
         symbol: Ticker symbol (e.g., 'AAPL', 'GOOGL')
         date: Date of the price data
@@ -35,7 +35,7 @@ class PriceData:
     volume: int
     adjusted_close: Optional[float] = None
     source: str = "unknown"
-    
+
     def to_dict(self) -> Dict:
         """Convert PriceData to dictionary."""
         return {
@@ -49,7 +49,7 @@ class PriceData:
             'adjusted_close': self.adjusted_close,
             'source': self.source
         }
-    
+
     @classmethod
     def from_dict(cls, data: Dict) -> 'PriceData':
         """Create PriceData from dictionary."""
@@ -60,7 +60,7 @@ class PriceData:
 class Portfolio:
     """
     Portfolio structure for holding multiple assets.
-    
+
     Attributes:
         name: Portfolio name
         assets: Dictionary mapping symbols to their allocations (weights)
@@ -73,25 +73,25 @@ class Portfolio:
     initial_value: float
     data: Optional[pd.DataFrame] = None
     created_at: datetime = field(default_factory=datetime.now)
-    
+
     def __post_init__(self):
         """Validate portfolio after initialization."""
         if not self.assets:
             raise ValueError("Portfolio must contain at least one asset")
-        
+
         total_weight = sum(self.assets.values())
         if not 0.99 <= total_weight <= 1.01:  # Allow small rounding errors
             raise ValueError(f"Asset weights must sum to 1.0, got {total_weight}")
-        
+
         if self.initial_value <= 0:
             raise ValueError("Initial value must be positive")
-    
+
     def get_asset_value(self, symbol: str) -> float:
         """Get the initial value allocated to a specific asset."""
         if symbol not in self.assets:
             raise KeyError(f"Asset {symbol} not in portfolio")
         return self.initial_value * self.assets[symbol]
-    
+
     def to_dict(self) -> Dict:
         """Convert Portfolio to dictionary."""
         return {
@@ -106,7 +106,7 @@ class Portfolio:
 class SimulationResult:
     """
     Results from a Monte Carlo portfolio simulation.
-    
+
     Attributes:
         portfolio_name: Name of the portfolio
         num_simulations: Number of simulation runs
@@ -121,18 +121,18 @@ class SimulationResult:
     simulated_paths: pd.DataFrame
     statistics: Dict[str, float]
     final_values: List[float]
-    
+
     def get_percentile(self, percentile: float) -> float:
         """Get a specific percentile of final values."""
         return pd.Series(self.final_values).quantile(percentile / 100)
-    
+
     def get_var(self, confidence: float = 95) -> float:
         """
         Calculate Value at Risk (VaR).
-        
+
         Args:
             confidence: Confidence level (e.g., 95 for 95% VaR)
-        
+
         Returns:
             VaR value
         """

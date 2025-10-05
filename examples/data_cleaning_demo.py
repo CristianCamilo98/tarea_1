@@ -19,17 +19,17 @@ def main():
     print("Data Extraction and Cleaning Example")
     print("=" * 70)
     print()
-    
+
     # 1. Initialize extractor
     print("1. Initializing data extractor...")
     extractor = DataExtractor()
     print(f"   ✓ Available sources: {extractor.available_sources}")
-    
+
     # 2. Try to fetch real data (may fail due to network restrictions)
     symbols = ['AAPL', 'MSFT']
     start_date = datetime.now() - timedelta(days=30)
     end_date = datetime.now()
-    
+
     print(f"\n2. Attempting to fetch data for {symbols}...")
     try:
         data = extractor.fetch_multiple(
@@ -43,7 +43,7 @@ def main():
     except Exception as e:
         print(f"   ✗ Could not fetch real data: {str(e)[:50]}...")
         print("   ✓ Using simulated data instead")
-        
+
         # Create simulated data with some issues
         dates = pd.date_range(start_date, end_date, freq='D')
         data_list = []
@@ -51,10 +51,10 @@ def main():
             for symbol in symbols:
                 base_price = 150 if symbol == 'AAPL' else 300
                 price = base_price * (1 + np.random.normal(0, 0.02))
-                
+
                 # Intentionally add some data quality issues
                 open_price = price * 0.99 if np.random.random() > 0.1 else np.nan
-                
+
                 data_list.append({
                     'symbol': symbol,
                     'open': open_price,
@@ -65,46 +65,46 @@ def main():
                     'adjusted_close': price,
                     'source': 'simulated'
                 })
-        
+
         data = pd.DataFrame(data_list)
         data['date'] = pd.concat([pd.Series(dates)] * len(symbols)).reset_index(drop=True)
         data = data.set_index(['date', 'symbol']).sort_index()
         print(f"   ✓ Generated simulated data: {data.shape}")
-    
+
     # 3. Inspect data quality
     print("\n3. Inspecting data quality...")
     missing_count = data.isna().sum().sum()
     print(f"   ✓ Missing values: {missing_count}")
     print(f"   ✓ Date range: {data.index.get_level_values('date').min()} to {data.index.get_level_values('date').max()}")
-    
+
     # Show a sample
     print("\n   Sample data (first 5 rows):")
     print(data.head().to_string())
-    
+
     # 4. Clean the data
     print("\n4. Cleaning data...")
     cleaner = DataCleaner()
-    
+
     # Step-by-step cleaning
     print("   a. Removing duplicates...")
     data_no_dupes = cleaner.remove_duplicates(data)
     dupes_removed = len(data) - len(data_no_dupes)
     print(f"      ✓ Removed {dupes_removed} duplicate rows")
-    
+
     print("   b. Handling missing values...")
     data_filled = cleaner.handle_missing_values(data_no_dupes, method='ffill')
     missing_after = data_filled.isna().sum().sum()
     print(f"      ✓ Missing values after fill: {missing_after}")
-    
+
     print("   c. Validating price data...")
     data_valid = cleaner.validate_price_data(data_filled)
     invalid_removed = len(data_filled) - len(data_valid)
     print(f"      ✓ Removed {invalid_removed} invalid rows")
-    
+
     print("   d. Calculating returns...")
     data_with_returns = cleaner.calculate_returns(data_valid, method='simple')
     print(f"      ✓ Returns calculated")
-    
+
     # 5. Or use the full pipeline
     print("\n5. Running full cleaning pipeline...")
     cleaned_data = cleaner.clean_data(
@@ -116,7 +116,7 @@ def main():
     )
     print(f"   ✓ Clean data shape: {cleaned_data.shape}")
     print(f"   ✓ Columns: {list(cleaned_data.columns)}")
-    
+
     # 6. Show statistics
     print("\n6. Data statistics after cleaning:")
     if 'returns' in cleaned_data.columns:
@@ -125,7 +125,7 @@ def main():
         print(f"   ✓ Std deviation: {returns.std():.4f}")
         print(f"   ✓ Min return: {returns.min():.4f}")
         print(f"   ✓ Max return: {returns.max():.4f}")
-    
+
     # 7. Check for outliers
     print("\n7. Checking for outliers in close prices...")
     try:
@@ -139,7 +139,7 @@ def main():
         print(f"   ✓ Removed {outliers_removed} outliers")
     except Exception as e:
         print(f"   ✓ No significant outliers detected")
-    
+
     print("\n" + "=" * 70)
     print("Data Extraction and Cleaning Complete!")
     print("=" * 70)
