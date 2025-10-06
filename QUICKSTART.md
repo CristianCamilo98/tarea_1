@@ -10,6 +10,8 @@ git clone https://github.com/CristianCamilo98/tarea_1.git
 cd tarea_1
 
 # Install dependencies
+python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 

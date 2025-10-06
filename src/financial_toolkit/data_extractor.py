@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import requests
 from .data_models import PriceData
+import os
 
 
 class DataExtractor:
@@ -23,8 +24,10 @@ class DataExtractor:
         Initialize the data extractor.
 
         Args:
-            alpha_vantage_key: API key for Alpha Vantage (optional)
+            alpha_vantage_key: API key for Alpha Vantage (optional, can be set via environment variable ALPHA_VANTAGE_API_KEY)
         """
+        if alpha_vantage_key is None:
+          alpha_vantage_key = os.getenv('ALPHA_VANTAGE_API_KEY')
         self.alpha_vantage_key = alpha_vantage_key
         self.available_sources = ['yahoo']
         if alpha_vantage_key:

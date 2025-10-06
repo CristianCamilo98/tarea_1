@@ -12,6 +12,8 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 from src.financial_toolkit import DataExtractor, DataCleaner
+from dotenv import load_dotenv
+load_dotenv()
 
 
 def main():
@@ -25,12 +27,12 @@ def main():
     extractor = DataExtractor()
     print(f"   ✓ Available sources: {extractor.available_sources}")
 
-    # 2. Try to fetch real data (may fail due to network restrictions)
-    symbols = ['AAPL', 'MSFT']
-    start_date = datetime.now() - timedelta(days=30)
+    # 2.1 Fetch real data using yahoo finance
+    symbols = ['AAPL', 'VOO']
+    start_date = datetime.now() - timedelta(days=365)
     end_date = datetime.now()
 
-    print(f"\n2. Attempting to fetch data for {symbols}...")
+    print(f"\n2.1 Fetch data using yahoo finance for {symbols}...")
     try:
         data = extractor.fetch_multiple(
             symbols=symbols,
@@ -40,36 +42,29 @@ def main():
         )
         print(f"   ✓ Successfully fetched real market data")
         print(f"   ✓ Data shape: {data.shape}")
+        # Check the index
+        print(f"   ✓ Index levels: {data.index.names}")
     except Exception as e:
-        print(f"   ✗ Could not fetch real data: {str(e)[:50]}...")
-        print("   ✓ Using simulated data instead")
+        print(f"   ✗ Could not fetch real data: {str(e)[:100]}...")
 
-        # Create simulated data with some issues
-        dates = pd.date_range(start_date, end_date, freq='D')
-        data_list = []
-        for date in dates:
-            for symbol in symbols:
-                base_price = 150 if symbol == 'AAPL' else 300
-                price = base_price * (1 + np.random.normal(0, 0.02))
-
-                # Intentionally add some data quality issues
-                open_price = price * 0.99 if np.random.random() > 0.1 else np.nan
-
-                data_list.append({
-                    'symbol': symbol,
-                    'open': open_price,
-                    'high': price * 1.02,
-                    'low': price * 0.98,
-                    'close': price,
-                    'volume': int(1000000 * (1 + np.random.random())),
-                    'adjusted_close': price,
-                    'source': 'simulated'
-                })
-
-        data = pd.DataFrame(data_list)
-        data['date'] = pd.concat([pd.Series(dates)] * len(symbols)).reset_index(drop=True)
-        data = data.set_index(['date', 'symbol']).sort_index()
-        print(f"   ✓ Generated simulated data: {data.shape}")
+    # 2.2 Fetch real data using alpha_vantage
+    symbols = ['AAPL', 'VOO']
+    start_date = datetime.now() - timedelta(days=365)
+    end_date = datetime.now()
+    print(f"\n2.2 Fetch data using alpha_vantage for {symbols}...")
+    try:
+        data = extractor.fetch_multiple(
+            symbols=symbols,
+            start_date=start_date,
+            end_date=end_date,
+            source='alpha_vantage'
+        )
+        print(f"   ✓ Successfully fetched real market data")
+        print(f"   ✓ Data shape: {data.shape}")
+        # Check the index
+        print(f"   ✓ Index levels: {data.index.names}")
+    except Exception as e:
+        print(f"   ✗ Could not fetch real data: {str(e)[:100]}...")
 
     # 3. Inspect data quality
     print("\n3. Inspecting data quality...")
@@ -145,7 +140,6 @@ def main():
     print("=" * 70)
     print(f"\nFinal clean dataset: {cleaned_data.shape[0]} rows × {cleaned_data.shape[1]} columns")
     print("Ready for analysis!")
-    print()
 
 
 if __name__ == '__main__':
