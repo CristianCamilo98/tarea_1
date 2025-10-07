@@ -34,7 +34,7 @@ def main():
 
     print(f"\n2.1 Fetch data using yahoo finance for {symbols}...")
     try:
-        data = extractor.fetch_multiple(
+        data = extractor.fetch_historic_prices(
             symbols=symbols,
             start_date=start_date,
             end_date=end_date,
@@ -42,7 +42,8 @@ def main():
         )
         print(f"   ✓ Successfully fetched real market data")
         print(f"   ✓ Data shape: {data.shape}")
-        # Check the index
+        print(f"  ✓ Sample data (first 10 rows):")
+        print(data.head(10).to_string())
         print(f"   ✓ Index levels: {data.index.names}")
     except Exception as e:
         print(f"   ✗ Could not fetch real data: {str(e)[:100]}...")
@@ -53,7 +54,7 @@ def main():
     end_date = datetime.now()
     print(f"\n2.2 Fetch data using alpha_vantage for {symbols}...")
     try:
-        data = extractor.fetch_multiple(
+        data = extractor.fetch_historic_prices(
             symbols=symbols,
             start_date=start_date,
             end_date=end_date,
@@ -61,7 +62,8 @@ def main():
         )
         print(f"   ✓ Successfully fetched real market data")
         print(f"   ✓ Data shape: {data.shape}")
-        # Check the index
+        print(f"  ✓ Sample data (first 10 rows):")
+        print(data.head(10).to_string())
         print(f"   ✓ Index levels: {data.index.names}")
     except Exception as e:
         print(f"   ✗ Could not fetch real data: {str(e)[:100]}...")
