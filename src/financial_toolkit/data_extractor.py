@@ -9,6 +9,7 @@ from datetime import datetime
 import pandas as pd
 from .yahoo_finance import YahooFinanceExtractor
 from .alpha_vantage import AlphaVantageExtractor
+from .data_models import PriceSeriesData
 import os
 
 
@@ -42,7 +43,7 @@ class DataExtractor:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         source: str = 'yahoo'
-    ) -> pd.DataFrame:
+    ) -> list[PriceSeriesData]:
         """
         Fetch historical prices for multiple symbols and return as a DataFrame.
 
@@ -53,6 +54,45 @@ class DataExtractor:
             source: Data source
 
         Returns:
+            List of PriceSeriesData objects
+        """
+        all_data = []
+
+        for symbol in symbols:
+            try:
+                if source == 'yahoo':
+                    price_series = PriceSeriesData(prices=self.yahoo_finance_extractor.fetch_historical_prices(symbol, start_date, end_date))
+                elif source == 'alpha_vantage':
+                    price_series = PriceSeriesData(prices=self.alpha_vantage_extractor.fetch_historical_prices(symbol, start_date, end_date))
+                else:
+                    raise ValueError(f"Unsupported source: {source}")
+
+                all_data.append(price_series)
+            except Exception as e:
+                print(f"Warning: Failed to fetch data for {symbol}: {e}")
+                continue
+
+        if not all_data:
+            raise ValueError("No data fetched for any symbol")
+
+        return all_data
+
+    def fetch_dividends(
+        self,
+        symbols: List[str],
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        source: str = 'yahoo'
+    ) -> pd.DataFrame:
+        """
+        Fetch dividend data for multiple symbols and return as a DataFrame.
+
+        Args:
+            symbols: List of stock ticker symbols
+            start_date: Start date for data fetch
+            end_date: End date for data fetch
+            source: Data source
+        Returns:
             DataFrame with multi-index (date, symbol)
         """
         all_data = []
@@ -60,20 +100,20 @@ class DataExtractor:
         for symbol in symbols:
             try:
                 if source == 'yahoo':
-                    price_data_list = self.yahoo_finance_extractor.fetch_historical_prices(symbol, start_date, end_date)
+                    dividend_data_list = self.yahoo_finance_extractor.fetch_dividends(symbol, start_date, end_date)
                 elif source == 'alpha_vantage':
-                    price_data_list = self.alpha_vantage_extractor.fetch_historical_prices(symbol, start_date, end_date)
+                    dividend_data_list = self.alpha_vantage_extractor.fetch_dividends(symbol, start_date, end_date)
                 else:
                     raise ValueError(f"Unsupported source: {source}")
 
-                for price_data in price_data_list:
-                    all_data.append(price_data.to_dict())
+                for dividend_data in dividend_data_list:
+                    all_data.append(dividend_data.to_dict())
             except Exception as e:
-                print(f"Warning: Failed to fetch data for {symbol}: {e}")
+                print(f"Warning: Failed to fetch dividend data for {symbol}: {e}")
                 continue
 
         if not all_data:
-            raise ValueError("No data fetched for any symbol")
+            raise ValueError("No dividend data fetched for any symbol")
 
         df = pd.DataFrame(all_data)
         df['date'] = pd.to_datetime(df['date'])
