@@ -22,7 +22,7 @@ class PriceData:
 
     Attributes:
         symbol: Ticker symbol (e.g., 'AAPL', 'GOOGL')
-        date: Date of the price data
+        date: Date of the price data, needs to be passed in UTC timezone
         open: Opening price
         high: Highest price
         low: Lowest price
@@ -40,6 +40,31 @@ class PriceData:
     volume: int
     adjusted_close: Optional[float] = None
     source: str = "unknown"
+
+    def __post_init__(self):
+        """
+        Cleaning and validation after initialization
+
+        """
+        # Verify datetime is in UTC
+        if self.date.tzinfo is None or self.date.tzinfo.utcoffset(self.date) is None:
+            raise ValueError("date must be timezone-aware and in UTC")
+
+        # Basic validation
+        if self.open <= 0 or self.high <= 0 or self.low <= 0 or self.close <= 0:
+            raise ValueError("OHLC prices must be > 0")
+        if self.volume < 0:
+            raise ValueError("volume must be >= 0")
+        if self.high < self.low:
+            raise ValueError("high must be >= low")
+
+        tol = 1e-8
+        if not (self.low - tol <= self.open <= self.high + tol):
+            raise ValueError(f"open ({self.open}) must be within [low, high] (±{tol})")
+        if not (self.low - tol <= self.close <= self.high + tol):
+            raise ValueError(f"close ({self.close}) must be within [low, high] (±{tol})")
+
+
 
     def to_dict(self) -> Dict:
         """Convert PriceData to dictionary."""
@@ -110,6 +135,7 @@ class PriceSeriesData:
     std_dev: Optional[float] = field(init=False, default=None)
     statistics: Dict[str, float] = field(init=False, default_factory=dict)
 
+
     def __post_init__(self):
         """Automatically calculate basic statistics after initialization."""
         if not self.prices:
@@ -120,8 +146,19 @@ class PriceSeriesData:
         if len(symbols) > 1:
             raise ValueError(f"All prices must belong to the same symbol. Found: {symbols}")
 
+        self._validation_post_init()
         self._calculate_basic_statistics()
         self._calculate_extended_statistics()
+
+    def _validation_post_init(self):
+        """
+        Cleaning and validation after initialization
+
+        """
+        # Verify no diuplicate dates
+        dates = [price.date for price in self.prices]
+        if len(dates) != len(set(dates)):
+            raise ValueError("Duplicate dates found in PriceSeriesData of symbol {self.symbol}")
 
     @property
     def symbol(self) -> str:
