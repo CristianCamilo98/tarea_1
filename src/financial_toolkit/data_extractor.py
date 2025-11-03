@@ -11,6 +11,7 @@ from .yahoo_finance import YahooFinanceExtractor
 from .alpha_vantage import AlphaVantageExtractor
 from .data_models import PriceSeriesData
 import os
+import sys
 
 
 class DataExtractor:
@@ -58,19 +59,16 @@ class DataExtractor:
         """
         all_data = []
 
-        for symbol in symbols:
-            try:
-                if source == 'yahoo':
-                    price_series = PriceSeriesData(prices=self.yahoo_finance_extractor.fetch_historical_prices(symbol, start_date, end_date))
-                elif source == 'alpha_vantage':
+        if source == 'yahoo':
+            price_series = self.yahoo_finance_extractor.fetch_historical_prices_batch(symbols, start_date, end_date)
+            for value in price_series.values():
+                all_data.append(PriceSeriesData(prices=value))
+        elif source == 'alpha_vantage':
+            for symbol in symbols:
                     price_series = PriceSeriesData(prices=self.alpha_vantage_extractor.fetch_historical_prices(symbol, start_date, end_date))
-                else:
-                    raise ValueError(f"Unsupported source: {source}")
-
-                all_data.append(price_series)
-            except Exception as e:
-                print(f"Warning: Failed to fetch data for {symbol}: {e}")
-                continue
+                    all_data.append(price_series)
+        else:
+            raise ValueError(f"Unsupported source: {source}")
 
         if not all_data:
             raise ValueError("No data fetched for any symbol")

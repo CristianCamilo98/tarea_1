@@ -5,11 +5,11 @@ Provides functionality to fetch financial data from Yahoo Finance using yfinance
 """
 
 from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import List, Optional, Dict
 from .data_models import PriceData, DividendData
 import yfinance as yf
 import pandas as pd
-import sys
+import numpy as np
 
 def to_utc_aware(dt: datetime) -> datetime:
     """
@@ -34,6 +34,79 @@ class YahooFinanceExtractor:
         except ImportError:
             raise ImportError("yfinance package is required. Install with: pip install yfinance")
         self.yf = yf
+
+    def fetch_historical_prices_batch(
+        self,
+        symbols: List[str],
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+    ) -> Dict[str, List[PriceData]]:
+        """
+        Fetch historical prices for multiple symbols.
+
+        Args:
+            symbols: List of stock ticker symbols
+            start_date: Start date for data fetch
+            end_date: End date for data fetch
+        Returns:
+            Dictionary mapping symbols to lists of PriceData objects
+        """
+        # Defaults: last 365 days, in UTC
+        if start_date is None:
+            start_date = datetime.now(timezone.utc) - timedelta(days=365)
+        if end_date is None:
+            end_date = datetime.now(timezone.utc)
+
+        # Make bounds UTC-aware
+        start_utc = to_utc_aware(start_date)
+        end_utc = to_utc_aware(end_date)
+
+
+        # df = yf.download(symbols, start=start_date, end=end_date)
+        df = yf.download(symbols, start=start_utc, end=end_utc, threads=True)
+        fetched_symbols = df.columns.get_level_values('Ticker').unique().tolist()
+
+        idx = df.index
+        if getattr(idx, "tz", None) is None:
+            df.index = idx.tz_localize("UTC")
+        else:
+            df.index = idx.tz_convert("UTC")
+
+
+        if df.empty:
+            raise ValueError(f"No data found for symbol {symbols}")
+
+        price_data: Dict[str, List[PriceData]] = {}
+
+        for date, row in df.iterrows():
+            for symb in fetched_symbols:
+                if symb not in price_data:
+                    price_data[symb] = []
+                open_price = row[('Open', symb)]
+                high_price = row[('High', symb)]
+                low_price = row[('Low', symb)]
+                close_price = row[('Close', symb)]
+                volume = row[('Volume', symb)]
+
+
+                if np.isnan(open_price) or np.isnan(high_price) or np.isnan(low_price) or np.isnan(close_price) or np.isnan(volume):
+                    continue
+
+                price_data[symb].append(
+                    PriceData(
+                        symbol=symb.upper(),
+                        date=date.to_pydatetime(),
+                        open=float(open_price),
+                        high=float(high_price),
+                        low=float(low_price),
+                        close=float(close_price),
+                        volume=int(volume),
+                        adjusted_close=float(close_price),
+                        source='yahoo'
+                    )
+                )
+
+        return price_data
 
     def fetch_historical_prices(
         self,
