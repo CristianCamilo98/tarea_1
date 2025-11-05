@@ -265,16 +265,18 @@ class PriceSeriesData:
         for price in self.prices:
             date_to_price[price.date] = price.close
 
-        moving_avg_series = pd.Series(date_to_price).sort_index().rolling(window=window).mean()
+        series = pd.Series(date_to_price).sort_index()
+        moving_avg_series = series.rolling(window=window).mean()
         return moving_avg_series.to_frame(name=f'moving_average_{window}')
 
 
-    def add_price(self, price_data: PriceData):
+    def add_prices(self, price_data: list[PriceData]):
         """Add a new price data point and recalculate statistics."""
-        if self.prices and price_data.symbol != self.symbol:
-            raise ValueError(f"Symbol mismatch: expected {self.symbol}, got {price_data.symbol}")
 
-        self.prices.append(price_data)
+        self.prices.extend(price_data)
+        # print("length of prices after adding:", len(self.prices), file=sys.stderr)
+        # print("first elment date:", self.prices[0].date, file=sys.stderr)
+        # print("last elment date:", self.prices[-1].date, file=sys.stderr)
         # Recalculate statistics
         self._calculate_basic_statistics()
         self._calculate_extended_statistics()
@@ -291,6 +293,7 @@ class PriceSeriesData:
         ]
 
         df = pd.DataFrame(data)
+        df = df.sort_values(by='date')
         if not df.empty:
             df.set_index('date', inplace=True)
         return df
@@ -680,3 +683,33 @@ class Portfolio:
          )
 
         return result
+
+@dataclass
+class SplitsData:
+    """
+    Standardized stock splits data structure for financial instruments.
+
+    Attributes:
+        symbol: Ticker symbol (e.g., 'AAPL', 'GOOGL')
+        data: Series of stock splits with date as index and split ratio as values
+        source: Data source identifier (e.g., 'yahoo', 'alpha_vantage')
+    """
+
+    symbol: str
+    data: pd.Series
+    source: str = "unknown"
+
+    def to_dict(self) -> Dict:
+        """Convert SplitsData to dictionary."""
+        return {
+            'symbol': self.symbol,
+            'data': self.data.to_dict(orient='records'),
+            'source': self.source
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict) -> 'SplitsData':
+        """Create SplitsData from dictionary."""
+        df = pd.DataFrame(data['data'])
+        return cls(symbol=data['symbol'], data=df, source=data.get('source', 'unknown'))
+

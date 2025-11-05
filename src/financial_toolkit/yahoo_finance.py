@@ -6,7 +6,7 @@ Provides functionality to fetch financial data from Yahoo Finance using yfinance
 
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict
-from .data_models import PriceData, DividendData
+from .data_models import PriceData, DividendData, SplitsData
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -28,12 +28,6 @@ class YahooFinanceExtractor:
     """
     Extractor for Yahoo Finance data.
     """
-    def __init__(self):
-        try:
-            import yfinance as yf
-        except ImportError:
-            raise ImportError("yfinance package is required. Install with: pip install yfinance")
-        self.yf = yf
 
     def fetch_historical_prices_batch(
         self,
@@ -62,8 +56,7 @@ class YahooFinanceExtractor:
         end_utc = to_utc_aware(end_date)
 
 
-        # df = yf.download(symbols, start=start_date, end=end_date)
-        df = yf.download(symbols, start=start_utc, end=end_utc, threads=True)
+        df = yf.download(symbols, start=start_utc, end=end_utc, threads=True, progress=False, auto_adjust=True)
         fetched_symbols = df.columns.get_level_values('Ticker').unique().tolist()
 
         idx = df.index
@@ -209,3 +202,42 @@ class YahooFinanceExtractor:
             for ts, amount in filtered.items()
         ]
         return out
+
+    def fetch_splits(
+        self,
+        symbol: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> SplitsData:
+        """
+        Fetch stock split data from Yahoo Finance filtered by UTC window.
+        Args:
+            symbol: Stock ticker symbol
+            start_date: Start date for filtering (inclusive), defaults to now - 365 days
+            end_date: End date for filtering (inclusive), defaults to now
+        Returns:
+            SplitsData object
+        """
+
+        if start_date is None:
+            start_date = datetime.now(timezone.utc) - timedelta(days=365)
+        if end_date is None:
+            end_date = datetime.now(timezone.utc)
+
+        # Make bounds UTC-aware
+        start_utc = to_utc_aware(start_date)
+        end_utc = to_utc_aware(end_date)
+
+        ticker = yf.Ticker(symbol)
+        splits = ticker.splits
+        splits = splits.tz_convert("UTC")
+        mask = (splits.index >= start_utc) & (splits.index <= end_utc)
+        splits = splits[mask]
+
+
+
+        return SplitsData(
+            symbol=symbol,
+            data=splits,
+            source="yahoo",
+        )

@@ -9,7 +9,7 @@ from datetime import datetime
 import pandas as pd
 from .yahoo_finance import YahooFinanceExtractor
 from .alpha_vantage import AlphaVantageExtractor
-from .data_models import PriceSeriesData
+from .data_models import PriceSeriesData, SplitsData
 import os
 import sys
 
@@ -118,3 +118,42 @@ class DataExtractor:
         df = df.set_index(['date', 'symbol']).sort_index()
 
         return df
+
+    def fetch_splits(
+        self,
+        symbols: List[str],
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        source: str = 'yahoo'
+    ) -> list[SplitsData]:
+        """
+        Fetch stock split data for multiple symbols and return as a DataFrame.
+
+        Args:
+            symbols: List of stock ticker symbols
+            start_date: Start date for data fetch
+            end_date: End date for data fetch
+            source: Data source. Currently supports 'yahoo' and 'alpha_vantage'.
+        Returns:
+            DataFrame with multi-index (date, symbol)
+        """
+        all_data = []
+
+        for symbol in symbols:
+            try:
+                if source == 'yahoo':
+                    split_data = self.yahoo_finance_extractor.fetch_splits(symbol, start_date, end_date)
+                elif source == 'alpha_vantage':
+                    split_data = self.alpha_vantage_extractor.fetch_splits(symbol, start_date, end_date)
+                else:
+                    raise ValueError(f"Unsupported source: {source}")
+
+                all_data.append(split_data)
+            except Exception as e:
+                print(f"Warning: Failed to fetch split data for {symbol}: {e}")
+                continue
+
+        if not all_data:
+            raise ValueError("No split data fetched for any symbol")
+
+        return all_data
