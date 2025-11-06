@@ -48,8 +48,7 @@ class AlphaVantageExtractor:
         response.raise_for_status()
         data = response.json()
 
-        if response.status_code == 429 or response.text.find("standard API rate limit is"):
-            print(response.text, file=sys.stderr)
+        if response.status_code == 429:
             raise ValueError("Alpha Vantage API rate limit exceeded")
 
         if "Error Message" in data:
@@ -194,9 +193,9 @@ class AlphaVantageExtractor:
 
         split_events = {}
         for entry in splits:
-            date = datetime.strptime(entry["date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            date = datetime.strptime(entry["effective_date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
             if start_utc <= date <= end_utc:
-                split_events[date] = float(entry["split_coefficient"])
+                split_events[date] = float(entry["split_factor"])
 
         splits = pd.Series(split_events)
         splits.index = pd.to_datetime(splits.index)
