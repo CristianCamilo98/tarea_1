@@ -18,7 +18,6 @@ from pprint import pprint
 load_dotenv()
 
 
-# def main():
 def run_data_extraction_demo(source, symbols):
     print("=" * 70)
     print("Data Extraction of Financial Market Data Demo using source:" f" {source}")
@@ -29,7 +28,7 @@ def run_data_extraction_demo(source, symbols):
     extractor = DataExtractor()
 
     # 2.1 Fetch real data using yahoo finance
-    start_date = datetime.now() - timedelta(days=365*15)
+    start_date = datetime.now() - timedelta(days=365*10)
     end_date = datetime.now()
 
     print(f"\n2.1 Fetch data using yahoo finance for {symbols}...")
@@ -113,7 +112,7 @@ def run_data_extraction_demo(source, symbols):
         weights={symbol: info['weight'] for symbol, info in portfolio_info.items()},
     )
     print(portfolio)
-    monte_carlo_simulation = portfolio.monte_carlo_simulation(num_simulations=1000, horizon_days=252)
+    monte_carlo_simulation = portfolio.monte_carlo_simulation(num_simulations=1000, horizon_days=252*2)
     monte_carlo_simulation.plots_report()
     monte_carlo_simulation.plots_detailed_report()
 
@@ -125,14 +124,15 @@ def run_data_extraction_demo(source, symbols):
         pprint(data.to_dict())
         print("\n\n")
 
-
-
-
+    print("=" * 70)
+    print("Generating portfolio report...")
+    report = portfolio.report(monte_carlo_simulation, save_to_file=True)
+    print(report)
 
 if __name__ == '__main__':
     # symbols = ['AAPL', 'VOO']
-    symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN']
+    symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN', 'TSLA']
     # symbols = ['JNJ', 'KO', 'XOM', 'GLD', 'NEE']
     # symbols = ['NMAX', 'SRPT', 'GLOB', 'CE', 'BHVN', 'PACS', 'ENPH', 'FRPT']
-    # run_data_extraction_demo(source='yahoo', symbols=symbols)
-    run_data_extraction_demo(source='alpha_vantage', symbols=symbols)
+    run_data_extraction_demo(source='yahoo', symbols=symbols)
+    # run_data_extraction_demo(source='alpha_vantage', symbols=symbols)
