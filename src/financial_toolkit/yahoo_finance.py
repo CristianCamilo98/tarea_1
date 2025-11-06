@@ -6,7 +6,8 @@ Provides functionality to fetch financial data from Yahoo Finance using yfinance
 
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional, Dict
-from .data_models import PriceData, DividendData, SplitsData
+from .models.market_data import PriceData, DividendData, SplitsData
+from .models.fundamental_data import FundamentalData
 import yfinance as yf
 import pandas as pd
 import numpy as np
@@ -240,4 +241,52 @@ class YahooFinanceExtractor:
             symbol=symbol,
             data=splits,
             source="yahoo",
+        )
+
+    def fetch_fundamental_data(
+        self,
+        symbol: str
+    ) -> FundamentalData:
+        """
+        Fetch fundamental company information from Yahoo Finance.
+        Args:
+            symbol: Stock ticker symbol
+        Returns:
+            FundamentalData object
+        """
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+
+        return FundamentalData(
+            symbol=symbol,
+            company_name=info.get("longName", ""),
+            report_date=datetime.now(timezone.utc),
+            period="TTM",
+            currency=info.get("currency", "USD"),
+            source="yahoo",
+            market_cap=info.get("marketCap"),
+            shares_outstanding=info.get("sharesOutstanding"),
+            beta=info.get("beta"),
+            revenuettm=info.get("totalRevenue"),
+            ebit=info.get("ebit"),
+            ebitda=info.get("ebitda"),
+            evtoebitda=info.get("enterpriseToEbitda"),
+            total_assets=info.get("totalAssets"),
+            total_liabilities=info.get("totalLiab"),
+            total_equity=info.get("totalStockholderEquity"),
+            total_debt=info.get("totalDebt"),
+            cash_and_equivalents=info.get("cash"),
+            operating_cash_flow=info.get("operatingCashflow"),
+            free_cash_flow=info.get("freeCashflow"),
+            eps_basic=info.get("trailingEps"),
+            eps_diluted_ttm=info.get("trailingEps"),
+            book_value_per_share=info.get("bookValue"),
+            dividends_per_share=info.get("dividendRate"),
+            pe_ratio=info.get("trailingPE"),
+            pb_ratio=info.get("priceToBook"),
+            ps_ratio_ttm=info.get("priceToSalesTrailing12Months"),
+            dividend_yield=info.get("dividendYield"),
+            roe=info.get("returnOnEquity"),
+            roa=info.get("returnOnAssets"),
+            profit_margin=info.get("profitMargins"),
         )

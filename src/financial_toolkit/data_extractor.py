@@ -9,9 +9,9 @@ from datetime import datetime
 import pandas as pd
 from .yahoo_finance import YahooFinanceExtractor
 from .alpha_vantage import AlphaVantageExtractor
-from .data_models import PriceSeriesData, SplitsData
+from .models.market_data import PriceSeriesData, SplitsData
+from .models.fundamental_data import FundamentalData
 import os
-import sys
 
 
 class DataExtractor:
@@ -157,3 +157,38 @@ class DataExtractor:
             raise ValueError("No split data fetched for any symbol")
 
         return all_data
+
+    def fetch_fundamental_data(
+        self,
+        symbols: List[str],
+        source: str = 'yahoo'
+    ) -> dict[str, FundamentalData]:
+        """
+        Fetch fundamental company information for multiple symbols.
+
+        Args:
+            symbol: Stock ticker symbol
+            source: Data source. Currently supports 'yahoo' and 'alpha_vantage'.
+        Returns:
+            Dictionary mapping symbol to FundamentalData
+        """
+        all_info = {}
+
+        for symbol in symbols:
+            try:
+                if source == 'yahoo':
+                    info = self.yahoo_finance_extractor.fetch_fundamental_data(symbol)
+                elif source == 'alpha_vantage':
+                    info = self.alpha_vantage_extractor.fetch_fundamental_data(symbol)
+                else:
+                    raise ValueError(f"Unsupported source: {source}")
+
+                all_info[symbol] = info
+            except Exception as e:
+                print(f"Warning: Failed to fetch company info for {symbol}: {e}")
+                continue
+
+        if not all_info:
+            raise ValueError("No company info fetched for any symbol")
+
+        return all_info

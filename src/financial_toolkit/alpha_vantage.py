@@ -5,9 +5,11 @@ Provides functionality to fetch financial data from Alpha Vantage API.
 """
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
-from .data_models import PriceData, DividendData
+from .models.market_data import PriceData, DividendData, SplitsData
+from .models.fundamental_data import FundamentalData
 import requests
 from .yahoo_finance import to_utc_aware
+import pandas as pd
 import sys
 
 class AlphaVantageExtractor:
@@ -46,7 +48,8 @@ class AlphaVantageExtractor:
         response.raise_for_status()
         data = response.json()
 
-        if response.status_code == 429:
+        if response.status_code == 429 or response.text.find("standard API rate limit is"):
+            print(response.text, file=sys.stderr)
             raise ValueError("Alpha Vantage API rate limit exceeded")
 
         if "Error Message" in data:
@@ -146,3 +149,123 @@ class AlphaVantageExtractor:
 
 
         return sorted(dividend_data_list, key=lambda x: x.date)
+
+    def fetch_splits(
+        self,
+        symbol: str,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+    ) -> SplitsData:
+        """
+        Fetch stock split data from Yahoo Finance filtered by UTC window.
+        Args:
+            symbol: Stock ticker symbol
+            start_date: Start date for filtering (inclusive), defaults to now - 365 days
+            end_date: End date for filtering (inclusive), defaults to now
+        Returns:
+            SplitsData object
+        """
+        if start_date is None:
+            start_date = datetime.now(timezone.utc) - timedelta(days=365)
+        if end_date is None:
+            end_date = datetime.now(timezone.utc)
+
+        # Make bounds UTC-aware
+        start_utc = to_utc_aware(start_date)
+        end_utc = to_utc_aware(end_date)
+
+        url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "SPLITS",
+            "symbol": symbol,
+            "apikey": self.api_key
+        }
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        if response.status_code == 429:
+            raise ValueError("Alpha Vantage API rate limit exceeded")
+        if "Error Message" in data:
+            raise ValueError(f"Alpha Vantage API error: {data['Error Message']}")
+        splits = data.get("data", [])
+        if not splits:
+            raise ValueError(f"No split data found for symbol {symbol}")
+
+        split_events = {}
+        for entry in splits:
+            date = datetime.strptime(entry["date"], "%Y-%m-%d").replace(tzinfo=timezone.utc)
+            if start_utc <= date <= end_utc:
+                split_events[date] = float(entry["split_coefficient"])
+
+        splits = pd.Series(split_events)
+        splits.index = pd.to_datetime(splits.index)
+        splits = splits.sort_index()
+
+        return SplitsData(
+            symbol=symbol.upper(),
+            data=splits,
+            source='alpha_vantage'
+        )
+
+
+
+    def fetch_fundamental_data(
+        self,
+        symbol: str
+    ) -> FundamentalData:
+        """
+        Fetch fundamental data from Alpha Vantage API.
+
+        Args:
+            symbol: Stock ticker symbol
+        Returns:
+            FundamentalData object
+        """
+        url = "https://www.alphavantage.co/query"
+        params = {
+            "function": "OVERVIEW",
+            "symbol": symbol,
+            "apikey": self.api_key
+        }
+
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        if response.status_code == 429:
+            raise ValueError("Alpha Vantage API rate limit exceeded")
+
+        if "Error Message" in data:
+            raise ValueError(f"Alpha Vantage API error: {data['Error Message']}")
+
+        if not data:
+            raise ValueError(f"No fundamental data found for symbol {symbol}")
+
+        fundamental_data = FundamentalData(
+            symbol=symbol.upper(),
+            company_name=data.get("Name", ""),
+            report_date=datetime.now(timezone.utc),
+            period="annual",
+            currency=data.get("Currency", "USD"),
+            source='alpha_vantage',
+            market_cap=float(data.get("MarketCapitalization", 0)) if data.get("MarketCapitalization") else None,
+            shares_outstanding=float(data.get("SharesOutstanding", 0)) if data.get("SharesOutstanding") else None,
+            beta=float(data.get("Beta", 0)) if data.get("Beta") else None,
+            revenuettm=float(data.get("RevenueTTM", 0)) if data.get("RevenueTTM") else None,
+            ebitda=float(data.get("EBITDA", 0)) if data.get("EBITDA") else None,
+            evtoebitda=float(data.get("EVToEBITDA", 0)),
+            eps_basic=float(data.get("EPS", 0)) if data.get("EPS") else None,
+            eps_diluted_ttm=float(data.get("DilutedEPSTTM", 0)) if data.get("DilutedEPSTTM") else None,
+            book_value_per_share=float(data.get("BookValue", 0)) if data.get("BookValue") else None,
+            dividends_per_share=float(data.get("DividendPerShare", 0)) if data.get("DividendPerShare") else None,
+            pe_ratio=float(data.get("PERatio", 0)) if data.get("PERatio") else None,
+            pb_ratio=float(data.get("PriceToBookRatio", 0)) if data.get("PriceToBookRatio") else None,
+            ps_ratio_ttm=float(data.get("PriceToSalesRatioTTM", 0)) if data.get("PriceToSalesRatioTTM") else None,
+            dividend_yield=float(data.get("DividendYield", 0)) if data.get("DividendYield") else None,
+            roe=float(data.get("ReturnOnEquityTTM", 0)) if data.get("ReturnOnEquityTTM") else None,
+            roa=float(data.get("ReturnOnAssetsTTM", 0)) if data.get("ReturnOnAssetsTTM") else None,
+            profit_margin=float(data.get("ProfitMargin", 0)) if data.get("ProfitMargin") else None
+        )
+
+        return fundamental_data
