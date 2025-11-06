@@ -546,6 +546,151 @@ class Portfolio:
     price_field: str = "Close"
     tz: str = "UTC"
 
+    def report(self, simulationresult: SimulationResult, risk_free_rate: float = 0.02, confidence_levels: List[float] = [0.9, 0.95, 0.99], save_to_file: bool = False) -> str:
+        """
+        Generate a comprehensive analysis report in markdown format.
+
+        Args:
+            risk_free_rate: Annual risk-free rate for Sharpe ratio calculation
+            confidence_levels: List of confidence levels for VaR and ES calculations
+
+        Returns:
+            str: Markdown formatted report
+        """
+        # Generate the report in markdown format
+        report = f"""
+# Análisis de Simulación Monte Carlo: {simulationresult.portfolio_name}
+*Generado el: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*
+
+## Parámetros de la Simulación
+- **Número de simulaciones:** {simulationresult.num_simulations:,}
+- **Horizonte temporal:** {simulationresult.time_horizon} días
+- **Activos en cartera:** {', '.join(simulationresult.tickers)}
+
+## Estadísticas Principales
+| Métrica | Valor |
+|---------|-------|
+"""
+        # Calculate and add key statistics
+        initial_value = simulationresult.simulated_paths[0][0]  # First value of first path
+        final_values = np.array(simulationresult.final_values)
+        mean_final = np.mean(final_values)
+        std_final = np.std(final_values)
+        total_return = (mean_final / initial_value - 1)
+        annual_return = (1 + total_return) ** (252/simulationresult.time_horizon) - 1
+
+        # Calculate annualized volatility
+        returns = np.diff(simulationresult.simulated_paths) / simulationresult.simulated_paths[:, :-1]
+        annual_vol = np.std(returns) * np.sqrt(252)
+
+        # Calculate Sharpe ratio
+        excess_return = annual_return - risk_free_rate
+        sharpe = excess_return / annual_vol if annual_vol != 0 else 0
+
+        stats = {
+            "Retorno Esperado (Anualizado)": f"{annual_return:.2%}",
+            "Volatilidad (Anualizada)": f"{annual_vol:.2%}",
+            "Ratio de Sharpe": f"{sharpe:.2f}",
+            "Valor Final Esperado": f"${mean_final:,.2f}",
+            "Valor Final (Desv. Est.)": f"${std_final:,.2f}",
+            "Valor Final (Mediana)": f"${np.median(final_values):,.2f}",
+        }
+
+        for metric, value in stats.items():
+            report += f"| {metric} | {value} |\n"
+
+        # Add VaR and Expected Shortfall for different confidence levels
+        report += "\n## Métricas de Riesgo\n| Nivel | VaR | Expected Shortfall |\n|-------|-----|-------------------|\n"
+
+        for conf in confidence_levels:
+            var = simulationresult.get_var(conf * 100)
+            es = float(np.mean(final_values[final_values <= var]))
+            report += f"| {conf:.1%} | ${var:,.2f} | ${es:,.2f} |\n"
+
+        # Risk warnings section
+        report += "\n## Advertencias y Análisis de Riesgo\n"
+        warnings = []
+
+        # Add warnings based on various risk metrics
+        if annual_vol > 0.25:  # High volatility warning
+            warnings.append("⚠️ **Alta Volatilidad**: La cartera muestra una volatilidad anualizada superior al 25%")
+
+        if sharpe < 0.5:  # Low Sharpe ratio warning
+            warnings.append("⚠️ **Bajo Ratio de Sharpe**: La cartera muestra un bajo rendimiento ajustado al riesgo")
+
+        var_95 = simulationresult.get_var(95)
+        if var_95 / initial_value > 0.2:  # High VaR warning
+            warnings.append("🚨 **Alto VaR**: Riesgo significativo de pérdidas en escenarios adversos")
+
+        prob_loss = np.mean(final_values < initial_value)
+        if prob_loss > 0.3:  # High probability of loss warning
+            warnings.append(f"📉 **Alta Probabilidad de Pérdida**: {prob_loss:.1%} de probabilidad de pérdida en el horizonte temporal")
+
+        # Maximum drawdown analysis
+        max_drawdown = 0
+        for path in simulationresult.simulated_paths:
+            cummax = np.maximum.accumulate(path)
+            drawdown = np.min(path / cummax - 1)
+            max_drawdown = min(max_drawdown, drawdown)
+
+        if abs(max_drawdown) > 0.3:  # High drawdown warning
+            warnings.append(f"📊 **Alto Drawdown Máximo**: {abs(max_drawdown):.1%} de caída máxima en las simulaciones")
+
+        # Add correlation analysis if multiple assets
+        if len(simulationresult.tickers) > 1:
+            report += "\n## Análisis de Correlación\n```\n"
+            report += str(simulationresult.corr.round(2))
+            report += "\n```\n"
+
+            # Add warning for high correlations
+            high_corr = (np.abs(simulationresult.corr) > 0.7) & (np.abs(simulationresult.corr) < 1)
+            if high_corr.any().any():
+                pairs = []
+                for i, j in zip(*np.where(high_corr)):
+                    if i < j:  # Avoid duplicates
+                        pairs.append(f"{simulationresult.tickers[i]}-{simulationresult.tickers[j]}")
+                if pairs:
+                    warnings.append(f"🔗 **Alta Correlación**: Detectada entre los pares: {', '.join(pairs)}")
+
+        # Add warnings to report
+        if warnings:
+            for warning in warnings:
+                report += f"- {warning}\n"
+        else:
+            report += "✅ No se han detectado advertencias significativas.\n"
+
+        # Add recommendations section
+        report += "\n## Recomendaciones\n"
+        recommendations = []
+
+        if annual_vol > 0.25:
+            recommendations.append("- Considerar reducir exposición a activos más volátiles")
+
+        if sharpe < 0.5:
+            recommendations.append("- Revisar la asignación de activos para mejorar el rendimiento ajustado al riesgo")
+
+        if prob_loss > 0.3:
+            recommendations.append("- Evaluar estrategias de cobertura para reducir la probabilidad de pérdidas")
+
+        if abs(max_drawdown) > 0.3:
+            recommendations.append("- Implementar stops de pérdidas o estrategias de gestión de drawdown")
+
+        if len(recommendations) > 0:
+            report += "\n".join(recommendations)
+        else:
+            report += "✅ La estructura de la cartera parece sólida. Mantener monitorización regular."
+
+        # Save report to file
+        if save_to_file:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"reports/monte_carlo_analysis_{timestamp}.md"
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(report)
+            print(f"Report saved to {filename}")
+
+        return report
+
+
     def __post_init__(self):
         """Validate weights and holdings after initialization."""
         if not self.holdings:
