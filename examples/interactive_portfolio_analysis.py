@@ -9,10 +9,10 @@ import sys
 import os
 from datetime import datetime, timedelta
 from typing import List, Dict
-import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.financial_toolkit import DataExtractor, Portfolio
 from dotenv import load_dotenv
+from pprint import pprint
 
 def clear_screen():
     """Clear the console screen."""
@@ -34,6 +34,17 @@ def get_user_symbols() -> List[str]:
             break
         symbols.append(symbol)
     return symbols
+
+def get_data_source() -> str:
+    """Get data source selection from user."""
+    print("\n=== Data Source Selection ===")
+    print("Available sources: yahoo, alpha_vantage")
+
+    while True:
+        source = input("Choose data source [default: yahoo]: ").lower().strip() or "yahoo"
+        if source in ['yahoo', 'alpha_vantage']:
+            return source
+        print("Invalid source! Please choose 'yahoo' or 'alpha_vantage'.")
 
 def get_date_range() -> tuple:
     """Get date range from user input."""
@@ -156,13 +167,16 @@ def show_menu() -> str:
     print("5. Plot Simulation Results")
     print("6. Plot Detailed Analysis")
     print("7. Change Portfolio Weights")
-    print("8. Exit")
+    print("8. View Splits Data")
+    print("9. View Dividends Data")
+    print("10. View Fundamental Data")
+    print("11. Exit")
 
     while True:
-        choice = input("\nEnter your choice (1-8): ").strip()
-        if choice in ['1', '2', '3', '4', '5', '6', '7', '8']:
+        choice = input("\nEnter your choice (1-11): ").strip()
+        if choice in ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11']:
             return choice
-        print("Invalid choice! Please enter a number between 1 and 8.")
+        print("Invalid choice! Please enter a number between 1 and 11.")
 
 def main():
     """Main function to run the interactive portfolio analysis."""
@@ -179,6 +193,9 @@ def main():
     # Get symbols from user
     symbols = get_user_symbols()
 
+    # Get data source
+    source = get_data_source()
+
     # Get date range
     start_date, end_date = get_date_range()
 
@@ -188,7 +205,7 @@ def main():
         symbols=symbols,
         start_date=start_date,
         end_date=end_date,
-        source='yahoo'
+        source=source
     )
     print("✓ Market data fetched successfully")
 
@@ -269,6 +286,47 @@ def main():
             input("\nPress Enter to continue...")
 
         elif choice == '8':
+            print("\n=== Stock Splits Data ===")
+            splits = extractor.fetch_splits(
+                symbols=symbols,
+                start_date=start_date,
+                end_date=end_date,
+                source=source
+            )
+            for split_data in splits:
+                print(f"\nSplits for {split_data.symbol}:")
+                if split_data.data.empty:
+                    print("  No splits data available.")
+                else:
+                    print(split_data.data.to_string())
+            input("\nPress Enter to continue...")
+
+        elif choice == '9':
+            print("\n=== Dividends Data ===")
+            dividends = extractor.fetch_dividends(
+                symbols=symbols,
+                start_date=start_date,
+                end_date=end_date,
+                source=source
+            )
+            if dividends.empty:
+                print("No dividends data available.")
+            else:
+                print(dividends.to_string())
+            input("\nPress Enter to continue...")
+
+        elif choice == '10':
+            print("\n=== Fundamental Data ===")
+            fundamental_data = extractor.fetch_fundamental_data(
+                symbols=symbols,
+                source=source
+            )
+            for symbol, data in fundamental_data.items():
+                print(f"\nFundamental data for {symbol}:")
+                pprint(data.to_dict())
+            input("\nPress Enter to continue...")
+
+        elif choice == '11':
             print("\nThank you for using Interactive Portfolio Analysis!")
             sys.exit(0)
 
