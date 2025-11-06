@@ -1,15 +1,14 @@
 """
-Example: Data Extraction and Cleaning
-
-This demonstrates how to fetch, clean, and prepare data for analysis.
+Example: Data Extraction of Financial Market Data and Portfolio Analysis Demo
+This script demonstrates how to use the Financial Toolkit library to extract historical
+financial market data, perform basic data analysis, and create a portfolio with Monte Carlo
+simulations.
 """
 
 import sys
 import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 from src.financial_toolkit import DataExtractor
 from src.financial_toolkit import Portfolio
