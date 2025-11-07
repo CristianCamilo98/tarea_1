@@ -93,4 +93,4 @@ A class diagram illustrating the main dependencies and structure of the toolkit 
 dot -Tpng diagram.dot -o diagrama.png
 ```
 
-![Toolkit Class Diagram](diagrama.png)
+![Toolkit Class Diagram](diagram.png)
