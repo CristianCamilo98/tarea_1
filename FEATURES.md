@@ -7,6 +7,9 @@ Object-oriented data structures using Python dataclasses:
 - **PriceData**: OHLCV (Open, High, Low, Close, Volume) data with metadata
 - **Portfolio**: Multi-asset portfolio with weights and validation
 - **SimulationResult**: Monte Carlo simulation results with statistics
+- **SplitsData**: Information on stock splits
+- **DividendData**: Record of dividends
+- **FundamentalData**: Key financial metrics for companies
 
 ### 2. Data Extraction (`data_extractor.py`)
 Multi-source API integration:
@@ -15,47 +18,8 @@ Multi-source API integration:
 - Batch fetching for multiple symbols
 - Automatic error handling and retry logic
 - Standardized data format across sources
-
-### 3. Data Cleaning (`data_cleaner.py`)
-Comprehensive data preprocessing:
-- Duplicate detection and removal
-- Missing value handling (forward fill, backward fill, interpolation, drop)
-- Price data validation (high >= low, consistency checks)
-- Outlier detection (IQR method, Z-score method)
-- Returns calculation (simple and log returns)
-- Full pipeline automation
-
-### 4. Portfolio Simulator (`portfolio_simulator.py`)
-Advanced financial simulation:
-- Monte Carlo simulation with configurable runs
-- Customizable time horizons
-- Statistical analysis of outcomes
-- Risk metrics calculation:
-  - Volatility (annualized)
-  - Sharpe Ratio
-  - Value at Risk (VaR)
-  - Conditional Value at Risk (CVaR)
-  - Maximum Drawdown
-- Portfolio optimization support
-
-### 5. Report Generator (`report_generator.py`)
-Professional markdown reporting:
-- Portfolio summary reports
-- Simulation analysis reports
-- Risk assessment reports
-- Data quality summaries
-- Comprehensive multi-section reports
-- File export functionality
-
-### 6. Visualizer (`visualizer.py`)
-Publication-quality visualizations:
-- Price history charts
-- Returns distribution histograms
-- Monte Carlo simulation paths
-- Portfolio allocation pie/bar charts
-- Correlation heatmaps
-- High-resolution export (300+ DPI)
-- Customizable styles
+- Fetch stock splits and dividends data
+- Fetch fundamental data metrics
 
 ## Key Features
 
@@ -69,7 +33,6 @@ Publication-quality visualizations:
 ### Data Quality
 - Robust validation
 - Multiple cleaning strategies
-- Outlier detection
 - Consistency checks
 - Error handling
 
@@ -105,14 +68,11 @@ Publication-quality visualizations:
 - **pytest**: Testing framework
 - **tabulate**: Table formatting
 
-## Code Quality
+## Dockerized for Convenience
 
-- **37 comprehensive tests**: All passing
-- **Type hints**: Throughout codebase
-- **Documentation**: Detailed docstrings
-- **Error handling**: Comprehensive
-- **Code style**: PEP 8 compliant
-- **Modular design**: Clean separation of concerns
+- Fully containerized experience for simplicity.
+- Plug-and-play ready with minimal configuration.
+- Run complete examples or basic usage effortlessly.
 
 ## Example Use Cases
 
@@ -129,7 +89,6 @@ Publication-quality visualizations:
 Potential areas for expansion:
 - Additional data sources (Quandl, IEX, etc.)
 - More optimization algorithms
-- Real-time data streaming
 - Database integration
 - Web interface
 - REST API
@@ -137,14 +96,3 @@ Potential areas for expansion:
 - Options and derivatives analysis
 - Multi-currency support
 - Tax optimization
-
-## Educational Value
-
-Perfect for:
-- Learning financial analysis
-- Understanding Monte Carlo methods
-- Studying portfolio theory
-- Practicing Python OOP
-- Data science projects
-- Academic coursework
-- Professional development
