@@ -1,42 +1,59 @@
-digraph FinancialToolkit {
-    rankdir=LR;
+digraph FinancialToolkitLayers {
+    rankdir=TB;
+    nodesep=1.0;  // Increased horizontal spacing between nodes
+    ranksep=1.5;  // Increased vertical spacing between ranks
     node [shape=box, fontsize=12];
 
-    DataExtractor [label="DataExtractor\nMethods: fetch_historic_prices, fetch_dividends, fetch_splits, fetch_fundamental_data"];
-    YahooFinanceExtractor [label="YahooFinanceExtractor\nMethods: fetch_historical_prices_batch, fetch_historical_prices, fetch_dividends, fetch_splits, fetch_fundamental_data"];
-    AlphaVantageExtractor [label="AlphaVantageExtractor\nMethods: fetch_historical_prices, fetch_dividends, fetch_splits, fetch_fundamental_data"];
+    subgraph cluster_dataclasses {
+        label="Dataclasses";
+        style=dotted;
+        margin=25;  // Added margin inside the cluster
 
-    PriceData [label="PriceData\nAttributes: symbol, date, open, high, low, close, volume, adjusted_close, source"];
-    DividendData [label="DividendData\nAttributes: symbol, date, dividend, source"];
-    SplitsData [label="SplitsData\nAttributes: symbol, data, source"];
-    FundamentalData [label="FundamentalData\nAttributes: symbol, company_name, report_date, ..."];
-    PriceSeriesData [label="PriceSeriesData\nAttributes: prices, mean_price, std_dev, statistics"];
-    SimulationResult [label="SimulationResult\nAttributes: portfolio_name, num_simulations, ..."];
-    Portfolio [label="Portfolio\nAttributes: holdings, weights, base_currency, ..."];
-    MacroSeriesData [label="MacroSeriesData\nAttributes: series_id, description, data, units, ..."];
+        PriceData [label="PriceData\nAttributes: symbol, date, open, high, low, close, volume, adjusted_close, source"];
+        DividendData [label="DividendData\nAttributes: symbol, date, dividend, source"];
+        SplitsData [label="SplitsData\nAttributes: symbol, data, source"];
+        FundamentalData [label="FundamentalData\nAttributes: symbol, company_name, report_date, ..."];
+        PriceSeriesData [label="PriceSeriesData\nAttributes: prices, mean_price, std_dev, statistics"];
+        SimulationResult [label="SimulationResult\nAttributes: portfolio_name, num_simulations, ..."];
+        MacroSeriesData [label="MacroSeriesData\nAttributes: series_id, description, data, units, ..."];
+    }
+
+    subgraph cluster_consumers {
+        label="Consumers";
+        style=solid;
+        margin=25;  // Added margin inside the cluster
+
+        DataExtractor [label="DataExtractor\nMethods: fetch_historic_prices, fetch_dividends, fetch_splits, fetch_fundamental_data"];
+        YahooFinanceExtractor [label="YahooFinanceExtractor\nMethods: fetch_historical_prices_batch, fetch_historical_prices, fetch_dividends, fetch_splits, fetch_fundamental_data"];
+        AlphaVantageExtractor [label="AlphaVantageExtractor\nMethods: fetch_historical_prices, fetch_dividends, fetch_splits, fetch_fundamental_data"];
+        Portfolio [label="Portfolio\nAttributes: holdings, weights, base_currency, ..."];
+    }
+
+    // Added weight attributes to enforce more spacing in the layout
+    {rank=same; YahooFinanceExtractor AlphaVantageExtractor}
 
     DataExtractor -> YahooFinanceExtractor [label="uses"];
     DataExtractor -> AlphaVantageExtractor [label="uses (if API key)"];
 
-    YahooFinanceExtractor -> PriceData;
-    YahooFinanceExtractor -> DividendData;
-    YahooFinanceExtractor -> SplitsData;
-    YahooFinanceExtractor -> FundamentalData;
-    AlphaVantageExtractor -> PriceData;
-    AlphaVantageExtractor -> DividendData;
-    AlphaVantageExtractor -> SplitsData;
-    AlphaVantageExtractor -> FundamentalData;
+    YahooFinanceExtractor -> PriceData [weight=2];
+    YahooFinanceExtractor -> DividendData [weight=2];
+    YahooFinanceExtractor -> SplitsData [weight=2];
+    YahooFinanceExtractor -> FundamentalData [weight=2];
+    AlphaVantageExtractor -> PriceData [weight=2];
+    AlphaVantageExtractor -> DividendData [weight=2];
+    AlphaVantageExtractor -> SplitsData [weight=2];
+    AlphaVantageExtractor -> FundamentalData [weight=2];
 
-    PriceSeriesData -> PriceData [label="contains list of"];
-    Portfolio -> PriceSeriesData [label="holdings (Dict)"];
-    Portfolio -> SimulationResult [label="creates"];
+    PriceSeriesData -> PriceData [label="contains list of", weight=2];
+    Portfolio -> PriceSeriesData [label="holdings (Dict)", weight=2];
+    Portfolio -> SimulationResult [label="creates", weight=2];
 
-    DataExtractor -> FundamentalData [label="returns"];
-    DataExtractor -> DividendData [label="returns"];
-    DataExtractor -> SplitsData [label="returns"];
-    DataExtractor -> PriceSeriesData [label="returns"];
-    DataExtractor -> MacroSeriesData [label="returns (if available)"];
+    DataExtractor -> FundamentalData [label="returns", weight=2];
+    DataExtractor -> DividendData [label="returns", weight=2];
+    DataExtractor -> SplitsData [label="returns", weight=2];
+    DataExtractor -> PriceSeriesData [label="returns", weight=2];
+    DataExtractor -> MacroSeriesData [label="returns (if available)", weight=2];
 
-    SplitsData -> PriceData [label="may reference"];
+    SplitsData -> PriceData [label="may reference", weight=2];
 }
 
