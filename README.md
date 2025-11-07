@@ -46,6 +46,19 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+#### Using Alpha Vantage as a Data Source
+
+If you want to use Alpha Vantage, you must obtain an API key:
+
+1. Go to https://www.alphavantage.co/support/#api-key and request your free API key.
+2. Create a file named `.env` in the project root directory with the following content:
+
+    ```
+    ALPHA_VANTAGE_API_KEY=your_api_key_here
+    ```
+
+Replace `your_api_key_here` with the key you received. This will allow the toolkit to fetch data from Alpha Vantage where required.
+
 ## Project Structure
 
 ```
@@ -57,17 +70,27 @@ tarea_1/
 │       ├── data_extractor.py       # Multi-API data fetching
 │       ├── alpha_vantage.py        # Alpha Vantage API wrapper
 │       ├── yahoo_finance.py        # Yahoo Finance API wrapper
+│       └── models/                 # Financial data models
 ├── examples/
 │   ├── complete_analysis.py        # Complete workflow example
 │   ├── portfolio_analysis.py       # Portfolio analysis example
 │   └── interactive_portfolio_analysis.py  # Interactive CLI tool
-├── tests/                          # Test suite for the toolkit
-│   ├── test_data_models.py         # Unit tests for data models
-│   ├── test_data_cleaner.py        # Tests for data cleaning functionality
 ├── Dockerfile                      # Docker configuration
+├── diagram.dot                     # Class diagram (DOT format)
+├── diagrama.png                    # Generated class diagram image
 ├── requirements.txt                # Dependency list
 ├── README.md                       # Project documentation
 ├── QUICKSTART.md                   # Quickstart guide
 ├── FEATURES.md                     # Feature overview
 └── LICENSE                         # License file
 ```
+
+## Class Diagram
+
+A class diagram illustrating the main dependencies and structure of the toolkit is provided. You can generate it from the DOT file as follows:
+
+```bash
+dot -Tpng diagram.dot -o diagrama.png
+```
+
+![Toolkit Class Diagram](diagrama.png)

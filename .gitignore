@@ -212,5 +212,6 @@ portfolio_allocation.png
 price_history_aapl.png
 simulation_results.png
 *.png
+!diagrama.png
 *_report.md
 /reports/
