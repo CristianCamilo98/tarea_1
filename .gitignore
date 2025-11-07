@@ -207,11 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Output files from examples
-financial_analysis_report.md
-portfolio_allocation.png
-price_history_aapl.png
-simulation_results.png
-*.png
 !diagrama.png
+*.png
 *_report.md
 /reports/

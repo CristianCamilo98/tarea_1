@@ -90,7 +90,7 @@ tarea_1/
 A class diagram illustrating the main dependencies and structure of the toolkit is provided. You can generate it from the DOT file as follows:
 
 ```bash
-dot -Tpng diagram.dot -o diagrama.png
+dot -Tpng diagram.dot -o diagram.png
 ```
 
-![Toolkit Class Diagram](diagrama.png)
+![Toolkit Class Diagram](diagram.png)
