@@ -10,7 +10,8 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Dict
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-from src.financial_toolkit import DataExtractor, Portfolio
+from src.financial_toolkit.data_extractor import DataExtractor
+from src.financial_toolkit.models.market_data import Portfolio
 from dotenv import load_dotenv
 from pprint import pprint
 

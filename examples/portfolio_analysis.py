@@ -10,8 +10,8 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from datetime import datetime, timedelta
-from src.financial_toolkit import DataExtractor
-from src.financial_toolkit import Portfolio
+from src.financial_toolkit.data_extractor import DataExtractor
+from src.financial_toolkit.models.market_data import Portfolio
 from dotenv import load_dotenv
 from pprint import pprint
 load_dotenv()
